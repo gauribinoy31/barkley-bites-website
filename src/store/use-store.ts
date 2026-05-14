@@ -25,6 +25,9 @@ type BarkleyStore = {
   toggleWishlist: (productId: string) => void;
   addRecentSearch: (term: string) => void;
   clearRecentSearches: () => void;
+  // UI-only auth flag — replaced by real NextAuth session once backend is wired
+  isLoggedIn: boolean;
+  setLoggedIn: (value: boolean) => void;
 };
 
 export const useBarkleyStore = create<BarkleyStore>()(
@@ -34,6 +37,8 @@ export const useBarkleyStore = create<BarkleyStore>()(
       wishlist: { ids: [] },
       recentSearches: [],
       promoCode: null,
+      isLoggedIn: false,
+      setLoggedIn: (value) => set({ isLoggedIn: value }),
       addToCart: (line) =>
         set((state) => {
           const existingIndex = state.cart.lines.findIndex(
@@ -120,6 +125,7 @@ export const useBarkleyStore = create<BarkleyStore>()(
         wishlist: state.wishlist,
         recentSearches: state.recentSearches,
         promoCode: state.promoCode,
+        isLoggedIn: state.isLoggedIn,
       }),
     },
   ),

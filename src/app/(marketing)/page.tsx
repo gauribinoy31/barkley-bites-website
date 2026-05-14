@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { HomePage } from "@/features/home/home-page";
+import { AuthGate } from "@/features/auth/auth-gate";
 
 export const metadata: Metadata = {
   title: "Premium dog treats & wellness",
@@ -8,5 +8,8 @@ export const metadata: Metadata = {
 };
 
 export default function MarketingHome() {
-  return <HomePage />;
+  // AuthGate checks isLoggedIn (Zustand/localStorage):
+  //   • not logged in  → shows <SignInView />
+  //   • logged in      → shows <HomePage />
+  return <AuthGate />;
 }

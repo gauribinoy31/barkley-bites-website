@@ -10,6 +10,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { useBarkleyStore, selectCartItemCount } from "@/store/use-store";
 import { cn } from "@/lib/utils";
+import { useRouter } from "next/navigation";
 
 const links = [
   { href: "/shop", label: "Shop" },
@@ -25,12 +26,21 @@ type NavbarClientProps = {
 
 export function NavbarClient({ session }: NavbarClientProps) {
   const pathname = usePathname();
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const cartCount = useBarkleyStore(selectCartItemCount);
+  const isLoggedIn = useBarkleyStore((s) => s.isLoggedIn);
+  const setLoggedIn = useBarkleyStore((s) => s.setLoggedIn);
 
   useEffect(() => {
     setOpen(false);
   }, [pathname]);
+
+  const handleZustandSignOut = () => {
+    // TODO: Also call NextAuth signOut() once backend is wired
+    setLoggedIn(false);
+    router.push("/");
+  };
 
   return (
     <header className="sticky top-0 z-40 border-b border-white/40 bg-barkley-cream/80 backdrop-blur-xl">
@@ -60,6 +70,18 @@ export function NavbarClient({ session }: NavbarClientProps) {
               {link.label}
             </Link>
           ))}
+          {/* My Profile — visible only when isLoggedIn (Zustand) */}
+          {isLoggedIn && (
+            <Link
+              href="/profile"
+              className={cn(
+                "transition-colors hover:text-barkley-forest",
+                pathname === "/profile" && "text-barkley-forest",
+              )}
+            >
+              My Profile
+            </Link>
+          )}
         </nav>
 
         <div className="flex items-center gap-2 md:gap-3">
@@ -72,32 +94,32 @@ export function NavbarClient({ session }: NavbarClientProps) {
             ) : null}
           </Link>
 
-          {session?.user ? (
+          {session?.user || isLoggedIn ? (
             <div className="relative hidden items-center gap-2 rounded-full border border-white/70 bg-white/70 px-2 py-1 pl-1 pr-2 text-xs shadow-soft md:flex">
               <div className="flex h-8 w-8 items-center justify-center rounded-full bg-barkley-sand text-barkley-cocoa">
                 <UserRound className="h-4 w-4" />
               </div>
               <div className="flex flex-col">
                 <span className="max-w-[120px] truncate text-[0.7rem] font-semibold text-barkley-cocoa">
-                  {session.user.name ?? "Member"}
+                  {session?.user?.name ?? "Member"}
                 </span>
                 <button
                   type="button"
-                  onClick={() => signOut({ callbackUrl: "/" })}
+                  onClick={session?.user ? () => signOut({ callbackUrl: "/" }) : handleZustandSignOut}
                   className="text-left text-[0.65rem] font-medium uppercase tracking-[0.18em] text-muted-foreground hover:text-barkley-forest"
                 >
                   Sign out
                 </button>
               </div>
               <Link
-                href="/dashboard"
+                href="/profile"
                 className="ml-1 rounded-full bg-barkley-forest px-3 py-1 text-[0.65rem] font-semibold uppercase tracking-[0.16em] text-barkley-cream hover:bg-barkley-forest/90"
               >
-                Account
+                Profile
               </Link>
             </div>
           ) : (
-            <Link href="/login" className="hidden md:inline-flex">
+            <Link href="/" className="hidden md:inline-flex">
               <Button variant="outline" size="sm" className="rounded-full px-5 text-[0.65rem] uppercase tracking-[0.18em]">
                 Sign in
               </Button>
@@ -129,20 +151,27 @@ export function NavbarClient({ session }: NavbarClientProps) {
                   {link.label}
                 </Link>
               ))}
+              {/* My Profile — visible only when isLoggedIn (Zustand) */}
+              {isLoggedIn && (
+                <Link href="/profile" className="py-1">
+                  My Profile
+                </Link>
+              )}
               <Link href="/cart" className="py-1">
                 Cart{cartCount ? ` (${cartCount})` : ""}
               </Link>
-              {session?.user ? (
+              {session?.user || isLoggedIn ? (
                 <>
-                  <Link href="/dashboard" className="py-1">
-                    Dashboard
-                  </Link>
-                  <button type="button" className="py-1 text-left" onClick={() => signOut({ callbackUrl: "/" })}>
+                  <button
+                    type="button"
+                    className="py-1 text-left"
+                    onClick={session?.user ? () => signOut({ callbackUrl: "/" }) : handleZustandSignOut}
+                  >
                     Sign out
                   </button>
                 </>
               ) : (
-                <Link href="/login" className="py-1">
+                <Link href="/" className="py-1">
                   Sign in
                 </Link>
               )}
