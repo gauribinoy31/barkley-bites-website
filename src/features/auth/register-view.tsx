@@ -80,12 +80,26 @@ export function RegisterView() {
     setValue("pet_age_years", calcAgeFromBirthday(birthday), { shouldValidate: false });
   }, [birthday, setValue]);
 
-  const onSubmit = form.handleSubmit((data) => {
-    // TODO: POST to /api/profile/save once MongoDB is connected
+  const onSubmit = form.handleSubmit(async (data) => {
+    // Save to local Zustand state immediately
     setProfileData(data);
     setLoggedIn(true);
-    // Fire-and-forget to Google Sheets — does not block or affect result
+
+    // 1. Save to MongoDB — await so Sheets fires after the save attempt
+    try {
+      await fetch("/api/profile/save", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+    } catch {
+      // Network / DB error — Google Sheets and redirect still proceed
+    }
+
+    // 2. Fire-and-forget to Google Sheets
     sendToGoogleSheets(data);
+
+    // 3. Redirect to home
     router.push("/");
   });
 
