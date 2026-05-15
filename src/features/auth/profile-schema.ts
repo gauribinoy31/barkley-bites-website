@@ -22,7 +22,14 @@ export const BREEDS = [
 
 export type Breed = (typeof BREEDS)[number];
 
-export const SIGNUP_SOURCES = ["", "Website", "Instagram", "Referral", "In-person", "Other"] as const;
+export const SIGNUP_SOURCES = [
+  "",
+  "Website",
+  "Instagram",
+  "Referral",
+  "In-person",
+  "Other",
+] as const;
 export const PET_SEXES = ["", "Male", "Female", "Unknown"] as const;
 
 export const profileSchema = z
@@ -38,7 +45,10 @@ export const profileSchema = z
     pet_name: z.string().min(1, "Pet name is required"),
     pet_breed: z
       .string()
-      .refine((v) => (BREEDS as readonly string[]).includes(v), "Please select a breed"),
+      .refine(
+        (v) => (BREEDS as readonly string[]).includes(v),
+        "Please select a breed",
+      ),
     pet_birthday: z.string().optional(),
     pet_age_years: z.coerce
       .number()
