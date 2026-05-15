@@ -99,4 +99,4 @@ export const emptyProfileDefaults: ProfileFormValues = {
 };
 
 export const GOOGLE_SHEETS_URL =
-  "https://script.google.com/macros/s/AKfycbwNWjRymEXZUhJpta5tysPqad9h2X4UBm2tYcrX2w0/exec";
+  "https://script.google.com/macros/s/AKfycbxGtmpqn7PN3mgmhUa05kZUIa0__eoqg5H-SUpMu0C1aLDE5-bxoh9BS-JNXlprC2pOSw/exec";

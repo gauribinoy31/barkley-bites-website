@@ -41,14 +41,16 @@ function sendToGoogleSheets(data: ProfileFormValues) {
     signup_source: data.signup_source ?? "",
   };
 
+  console.log("[Sheets] sending payload:", payload);
+
   // Content-Type must be text/plain for Apps Script CORS
   fetch(GOOGLE_SHEETS_URL, {
     method: "POST",
     headers: { "Content-Type": "text/plain;charset=utf-8" },
     body: JSON.stringify(payload),
-  }).catch(() => {
-    // TODO: Log failure to server monitoring once backend is wired
-  });
+  })
+    .then((res) => console.log("[Sheets] response status:", res.status))
+    .catch((err) => console.error("[Sheets] fetch error:", err));
 }
 
 export function RegisterView() {
@@ -96,8 +98,8 @@ export function RegisterView() {
       // Network / DB error — Google Sheets and redirect still proceed
     }
 
-    // 2. Fire-and-forget to Google Sheets
-    sendToGoogleSheets(data);
+    // 2. Google Sheets is now called server-side in /api/profile/save — no client call needed
+    // sendToGoogleSheets(data);
 
     // 3. Redirect to home
     router.push("/");

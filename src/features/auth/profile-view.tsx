@@ -20,27 +20,32 @@ import {
 
 // Fire-and-forget — never blocks the save or shows an error to the user
 function sendToGoogleSheets(data: ProfileFormValues) {
+  const payload = {
+    owner_first_name: data.owner_first_name,
+    owner_last_name: data.owner_last_name,
+    owner_email: data.owner_email,
+    owner_phone: data.owner_phone ?? "",
+    owner_city: data.owner_city ?? "",
+    pet_name: data.pet_name,
+    pet_breed: data.pet_breed,
+    pet_birthday: data.pet_birthday ?? "",
+    pet_age_years: data.pet_age_years ?? "",
+    pet_weight_lbs: data.pet_weight_lbs,
+    pet_sex: data.pet_sex ?? "",
+    health_conditions: data.health_conditions ?? "",
+    signup_source: data.signup_source ?? "",
+  };
+
+  console.log("[Sheets] sending payload:", payload);
+
+  // Content-Type must be text/plain for Apps Script CORS
   fetch(GOOGLE_SHEETS_URL, {
     method: "POST",
     headers: { "Content-Type": "text/plain;charset=utf-8" },
-    body: JSON.stringify({
-      owner_first_name: data.owner_first_name,
-      owner_last_name: data.owner_last_name,
-      owner_email: data.owner_email,
-      owner_phone: data.owner_phone ?? "",
-      owner_city: data.owner_city ?? "",
-      pet_name: data.pet_name,
-      pet_breed: data.pet_breed,
-      pet_birthday: data.pet_birthday ?? "",
-      pet_age_years: data.pet_age_years ?? "",
-      pet_weight_lbs: data.pet_weight_lbs,
-      pet_sex: data.pet_sex ?? "",
-      health_conditions: data.health_conditions ?? "",
-      signup_source: data.signup_source ?? "",
-    }),
-  }).catch(() => {
-    // TODO: Log failure to server monitoring once backend is wired
-  });
+    body: JSON.stringify(payload),
+  })
+    .then((res) => console.log("[Sheets] response status:", res.status))
+    .catch((err) => console.error("[Sheets] fetch error:", err));
 }
 
 const fieldCls =
@@ -85,13 +90,22 @@ export function ProfileView() {
     setValue("pet_age_years", calcAgeFromBirthday(birthday), { shouldValidate: false });
   }, [birthday, setValue]);
 
-  const onSubmit = form.handleSubmit((data) => {
-    // TODO: POST to /api/profile/save once MongoDB is connected
+  const onSubmit = form.handleSubmit(async (data) => {
     setProfileData(data);
+
+    try {
+      await fetch("/api/profile/save", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+    } catch {
+      // Network / DB error — save to Zustand still succeeded
+    }
+
     setSaved(true);
     setTimeout(() => setSaved(false), 4000);
-    // Fire-and-forget to Google Sheets — does not block or affect the save result
-    sendToGoogleSheets(data);
+    // sendToGoogleSheets(data); — moved server-side into /api/profile/save
   });
 
   if (!mounted) {
