@@ -47,7 +47,7 @@
     "zustand": "^5.0.2"
   },
   "overrides": {
-    "is-bigint": "^1.0.4"
+    "is-bigint": "1.0.4"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
