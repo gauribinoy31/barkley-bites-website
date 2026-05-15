@@ -21,7 +21,6 @@ function notifyGoogleSheets(body: Record<string, unknown>) {
     signup_source: body.signup_source ?? "",
   };
 
-  // Server-to-server: no CORS restrictions, redirect handling is reliable
   fetch(GOOGLE_SHEETS_URL, {
     method: "POST",
     headers: { "Content-Type": "text/plain;charset=utf-8" },
@@ -49,8 +48,6 @@ export async function POST(request: Request) {
   try {
     await connectDB();
 
-    // Upsert: update profile on existing user, or create a new user document.
-    // $setOnInsert only runs on insert (new user), providing the required `name` field.
     await UserModel.findOneAndUpdate(
       { email },
       {
@@ -63,7 +60,7 @@ export async function POST(request: Request) {
       { upsert: true, new: true },
     );
 
-    // Fire-and-forget to Google Sheets — does not affect the response
+    // Fire-and-forget to Google Sheets after successful DB save
     notifyGoogleSheets(body);
 
     return NextResponse.json({ ok: true });

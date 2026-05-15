@@ -2,24 +2,23 @@ import { NextRequest, NextResponse } from "next/server";
 
 // Auth is Zustand/localStorage-based (no NextAuth backend yet).
 // We mirror isLoggedIn into a lightweight "barkley-auth" cookie so the
-// middleware can check it server-side — localStorage is unavailable here.
+// proxy can check it server-side — localStorage is unavailable here.
 // TODO: Replace cookie check with getToken() from next-auth/jwt once
 //       AUTH_SECRET and a real provider are configured.
 
 const PUBLIC_ROUTES = ["/login", "/register"];
 
-// Paths the middleware must never touch
+// Paths the proxy must never touch
 function isStaticOrInternal(pathname: string): boolean {
   return (
     pathname.startsWith("/_next") ||
     pathname.startsWith("/api") ||
     pathname.startsWith("/favicon") ||
-    // static file extensions
     /\.(?:svg|png|jpg|jpeg|gif|webp|ico|woff2?|ttf|otf|eot|css|js|map)$/.test(pathname)
   );
 }
 
-export default function middleware(req: NextRequest) {
+export default function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
   if (isStaticOrInternal(pathname)) return NextResponse.next();
@@ -45,6 +44,5 @@ export default function middleware(req: NextRequest) {
 }
 
 export const config = {
-  // Run on every route; the function above decides what to skip
   matcher: ["/((?!_next/static|_next/image).*)"],
 };
