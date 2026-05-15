@@ -15,7 +15,33 @@ import {
   calcAgeFromBirthday,
   emptyProfileDefaults,
   BREEDS,
+  GOOGLE_SHEETS_URL,
 } from "@/features/auth/profile-schema";
+
+// Fire-and-forget — never blocks the save or shows an error to the user
+function sendToGoogleSheets(data: ProfileFormValues) {
+  fetch(GOOGLE_SHEETS_URL, {
+    method: "POST",
+    headers: { "Content-Type": "text/plain;charset=utf-8" },
+    body: JSON.stringify({
+      owner_first_name: data.owner_first_name,
+      owner_last_name: data.owner_last_name,
+      owner_email: data.owner_email,
+      owner_phone: data.owner_phone ?? "",
+      owner_city: data.owner_city ?? "",
+      pet_name: data.pet_name,
+      pet_breed: data.pet_breed,
+      pet_birthday: data.pet_birthday ?? "",
+      pet_age_years: data.pet_age_years ?? "",
+      pet_weight_lbs: data.pet_weight_lbs,
+      pet_sex: data.pet_sex ?? "",
+      health_conditions: data.health_conditions ?? "",
+      signup_source: data.signup_source ?? "",
+    }),
+  }).catch(() => {
+    // TODO: Log failure to server monitoring once backend is wired
+  });
+}
 
 const fieldCls =
   "flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50";
@@ -64,6 +90,8 @@ export function ProfileView() {
     setProfileData(data);
     setSaved(true);
     setTimeout(() => setSaved(false), 4000);
+    // Fire-and-forget to Google Sheets — does not block or affect the save result
+    sendToGoogleSheets(data);
   });
 
   if (!mounted) {
