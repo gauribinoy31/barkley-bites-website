@@ -105,7 +105,7 @@ export function NavbarClient({ session }: NavbarClientProps) {
               <LogOut className="h-4 w-4" />
             </button>
           ) : (
-            <Link href="/" className="hidden md:inline-flex">
+            <Link href="/login" className="hidden md:inline-flex">
               <Button variant="outline" size="sm" className="rounded-full px-5 text-[0.65rem] uppercase tracking-[0.18em]">
                 Sign in
               </Button>
@@ -157,7 +157,7 @@ export function NavbarClient({ session }: NavbarClientProps) {
                   </button>
                 </>
               ) : (
-                <Link href="/" className="py-1">
+                <Link href="/login" className="py-1">
                   Sign in
                 </Link>
               )}

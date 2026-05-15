@@ -1,28 +1,73 @@
 import { z } from "zod";
 
-export const profileSchema = z.object({
-  // Section 1 — Owner Info (required)
-  owner_first_name: z.string().min(1, "First name is required"),
-  owner_last_name: z.string().min(1, "Last name is required"),
-  owner_phone: z.string().min(1, "Phone is required"),
-  owner_email: z.string().email("Enter a valid email"),
-  owner_city: z.string().optional(),
-  signup_source: z
-    .enum(["", "Instagram", "Facebook", "TikTok", "Google Search", "Friend/Referral", "Other"])
-    .optional(),
+export const BREEDS = [
+  "Australian Shepherd",
+  "Beagle",
+  "Boxer",
+  "Bulldog",
+  "Cavalier King Charles",
+  "Dachshund",
+  "French Bulldog",
+  "German Shepherd",
+  "German Shorthaired Pointer",
+  "Golden Retriever",
+  "Labrador",
+  "Mixed Breed",
+  "Pembroke Welsh Corgi",
+  "Poodle",
+  "Rottweiler",
+  "Shih Tzu",
+  "Yorkshire Terrier",
+] as const;
 
-  // Section 2 — Pet Info (all optional)
-  pet_name: z.string().optional(),
-  pet_breed: z.string().optional(),
-  pet_birthday: z.string().optional(),
-  pet_age_years: z.coerce.number().min(0).optional().or(z.literal("")),
-  pet_weight_lbs: z.coerce.number().min(0).optional().or(z.literal("")),
-  pet_sex: z.enum(["", "Male", "Female"]).optional(),
-  allergies: z.string().optional(),
-  health_conditions: z.string().optional(),
-  activity_level: z.enum(["", "Low", "Moderate", "High", "Very High"]).optional(),
-  vet_notes: z.string().optional(),
-});
+export type Breed = (typeof BREEDS)[number];
+
+export const SIGNUP_SOURCES = ["", "Website", "Instagram", "Referral", "In-person", "Other"] as const;
+export const PET_SEXES = ["", "Male", "Female", "Unknown"] as const;
+
+export const profileSchema = z
+  .object({
+    // Section 1 — About You
+    owner_first_name: z.string().min(1, "First name is required"),
+    owner_last_name: z.string().min(1, "Last name is required"),
+    owner_email: z.string().email("Enter a valid email"),
+    owner_phone: z.string().optional(),
+    owner_city: z.string().optional(),
+
+    // Section 2 — About Your Pet
+    pet_name: z.string().min(1, "Pet name is required"),
+    pet_breed: z
+      .string()
+      .refine((v) => (BREEDS as readonly string[]).includes(v), "Please select a breed"),
+    pet_birthday: z.string().optional(),
+    pet_age_years: z.coerce
+      .number()
+      .min(0, "Min 0")
+      .max(25, "Max 25")
+      .optional()
+      .or(z.literal("")),
+    pet_weight_lbs: z.coerce
+      .number({ invalid_type_error: "Weight is required" })
+      .min(1, "Min 1 lb")
+      .max(200, "Max 200 lbs"),
+    pet_sex: z.enum(PET_SEXES).optional(),
+    health_conditions: z.string().optional(),
+    signup_source: z.enum(SIGNUP_SOURCES).optional(),
+  })
+  .superRefine((data, ctx) => {
+    const hasBirthday = Boolean(data.pet_birthday);
+    const hasAge =
+      data.pet_age_years !== "" &&
+      data.pet_age_years !== undefined &&
+      data.pet_age_years !== null;
+    if (!hasBirthday && !hasAge) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Please enter a birthday or an age in years",
+        path: ["pet_age_years"],
+      });
+    }
+  });
 
 export type ProfileFormValues = z.infer<typeof profileSchema>;
 
@@ -39,18 +84,19 @@ export function calcAgeFromBirthday(dateStr: string): number {
 export const emptyProfileDefaults: ProfileFormValues = {
   owner_first_name: "",
   owner_last_name: "",
-  owner_phone: "",
   owner_email: "",
+  owner_phone: "",
   owner_city: "",
-  signup_source: "",
   pet_name: "",
   pet_breed: "",
   pet_birthday: "",
   pet_age_years: "",
+  // @ts-expect-error — empty string is the unset sentinel for this required number field
   pet_weight_lbs: "",
   pet_sex: "",
-  allergies: "",
   health_conditions: "",
-  activity_level: "",
-  vet_notes: "",
+  signup_source: "",
 };
+
+export const GOOGLE_SHEETS_URL =
+  "https://script.google.com/macros/s/AKfycbwNWjRymEXZUhJpta5tysPqad9h2X4UBm2tYcrX2w0/exec";

@@ -45,7 +45,7 @@ export function SignInView() {
   const handleSignIn = signInForm.handleSubmit(() => {
     // TODO: Replace with NextAuth signIn() once configured
     setLoggedIn(true);
-    // stays on / — AuthGate re-renders and shows <HomePage />
+    router.push("/");
   });
 
   const handleSignUp = signUpForm.handleSubmit(() => {

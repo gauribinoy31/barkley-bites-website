@@ -13,20 +13,44 @@ import {
   type ProfileFormValues,
   calcAgeFromBirthday,
   emptyProfileDefaults,
+  BREEDS,
+  GOOGLE_SHEETS_URL,
 } from "@/features/auth/profile-schema";
 
-// Re-export schema + type so profile-view.tsx can import from one place
+// Re-export schema + type so consumers can import from one place
 export { profileSchema, type ProfileFormValues } from "@/features/auth/profile-schema";
 
-// ---------------------------------------------------------------------------
-// Shared field classes — mirrors the existing Input component styling
-// ---------------------------------------------------------------------------
 const fieldCls =
   "flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50";
 
-// ---------------------------------------------------------------------------
-// Register View
-// ---------------------------------------------------------------------------
+// Fire-and-forget POST to Google Sheets — never blocks registration
+function sendToGoogleSheets(data: ProfileFormValues) {
+  const payload = {
+    owner_first_name: data.owner_first_name,
+    owner_last_name: data.owner_last_name,
+    owner_email: data.owner_email,
+    owner_phone: data.owner_phone ?? "",
+    owner_city: data.owner_city ?? "",
+    pet_name: data.pet_name,
+    pet_breed: data.pet_breed,
+    pet_birthday: data.pet_birthday ?? "",
+    pet_age_years: data.pet_age_years ?? "",
+    pet_weight_lbs: data.pet_weight_lbs,
+    pet_sex: data.pet_sex ?? "",
+    health_conditions: data.health_conditions ?? "",
+    signup_source: data.signup_source ?? "",
+  };
+
+  // Content-Type must be text/plain for Apps Script CORS
+  fetch(GOOGLE_SHEETS_URL, {
+    method: "POST",
+    headers: { "Content-Type": "text/plain;charset=utf-8" },
+    body: JSON.stringify(payload),
+  }).catch(() => {
+    // TODO: Log failure to server monitoring once backend is wired
+  });
+}
+
 export function RegisterView() {
   const router = useRouter();
   const setLoggedIn = useBarkleyStore((s) => s.setLoggedIn);
@@ -38,7 +62,7 @@ export function RegisterView() {
     defaultValues: emptyProfileDefaults,
   });
 
-  const { watch, setValue } = form;
+  const { watch, setValue, formState: { errors } } = form;
   const birthday = watch("pet_birthday");
 
   // Pre-fill with previously saved data (e.g. user revisiting /register)
@@ -60,6 +84,8 @@ export function RegisterView() {
     // TODO: POST to /api/profile/save once MongoDB is connected
     setProfileData(data);
     setLoggedIn(true);
+    // Fire-and-forget to Google Sheets — does not block or affect result
+    sendToGoogleSheets(data);
     router.push("/");
   });
 
@@ -78,7 +104,7 @@ export function RegisterView() {
           </p>
           <h1 className="font-display text-4xl text-barkley-cocoa">Tell us about yourself</h1>
           <p className="text-sm text-muted-foreground">
-            This helps us personalise your experience. All pet fields are optional.
+            This helps us personalise your experience. All pet fields marked optional can be skipped.
           </p>
         </div>
         <Button
@@ -93,211 +119,156 @@ export function RegisterView() {
 
       <form onSubmit={onSubmit} noValidate className="space-y-10">
         {/* ------------------------------------------------------------------ */}
-        {/* Section 1 — Owner Info                                              */}
+        {/* Section 1 — About You                                               */}
         {/* ------------------------------------------------------------------ */}
         <section className="space-y-6 rounded-3xl bg-white/90 p-6 shadow-soft ring-1 ring-white/70 md:p-8">
           <div className="space-y-1">
-            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-barkley-sage">
-              Section 1
-            </p>
+            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-barkley-sage">Section 1</p>
             <h2 className="font-display text-2xl text-barkley-cocoa">About You</h2>
           </div>
 
           <div className="grid gap-5 sm:grid-cols-2">
-            {/* first name */}
             <div className="space-y-2">
               <Label htmlFor="owner_first_name">First name *</Label>
               <Input id="owner_first_name" {...form.register("owner_first_name")} />
-              {form.formState.errors.owner_first_name && (
-                <p className="text-xs text-destructive">
-                  {form.formState.errors.owner_first_name.message}
-                </p>
+              {errors.owner_first_name && (
+                <p className="text-xs text-destructive">{errors.owner_first_name.message}</p>
               )}
             </div>
 
-            {/* last name */}
             <div className="space-y-2">
               <Label htmlFor="owner_last_name">Last name *</Label>
               <Input id="owner_last_name" {...form.register("owner_last_name")} />
-              {form.formState.errors.owner_last_name && (
-                <p className="text-xs text-destructive">
-                  {form.formState.errors.owner_last_name.message}
-                </p>
+              {errors.owner_last_name && (
+                <p className="text-xs text-destructive">{errors.owner_last_name.message}</p>
               )}
             </div>
 
-            {/* phone */}
-            <div className="space-y-2">
-              <Label htmlFor="owner_phone">Phone *</Label>
-              <Input id="owner_phone" type="tel" autoComplete="tel" {...form.register("owner_phone")} />
-              {form.formState.errors.owner_phone && (
-                <p className="text-xs text-destructive">
-                  {form.formState.errors.owner_phone.message}
-                </p>
-              )}
-            </div>
-
-            {/* email */}
             <div className="space-y-2">
               <Label htmlFor="owner_email">Email *</Label>
-              <Input
-                id="owner_email"
-                type="email"
-                autoComplete="email"
-                {...form.register("owner_email")}
-              />
-              {form.formState.errors.owner_email && (
-                <p className="text-xs text-destructive">
-                  {form.formState.errors.owner_email.message}
-                </p>
+              <Input id="owner_email" type="email" autoComplete="email" {...form.register("owner_email")} />
+              {errors.owner_email && (
+                <p className="text-xs text-destructive">{errors.owner_email.message}</p>
               )}
             </div>
 
-            {/* city */}
             <div className="space-y-2">
-              <Label htmlFor="owner_city">City</Label>
-              <Input id="owner_city" {...form.register("owner_city")} />
+              <Label htmlFor="owner_phone">Phone</Label>
+              <Input
+                id="owner_phone"
+                type="tel"
+                autoComplete="tel"
+                placeholder="(555) 000-0000"
+                {...form.register("owner_phone")}
+              />
             </div>
 
-            {/* signup source */}
-            <div className="space-y-2">
-              <Label htmlFor="signup_source">How did you hear about us?</Label>
-              <select
-                id="signup_source"
-                className={fieldCls}
-                {...form.register("signup_source")}
-              >
-                <option value="">Select…</option>
-                <option value="Instagram">Instagram</option>
-                <option value="Facebook">Facebook</option>
-                <option value="TikTok">TikTok</option>
-                <option value="Google Search">Google Search</option>
-                <option value="Friend/Referral">Friend / Referral</option>
-                <option value="Other">Other</option>
-              </select>
+            <div className="space-y-2 sm:col-span-2">
+              <Label htmlFor="owner_city">City</Label>
+              <Input id="owner_city" placeholder="Dallas" {...form.register("owner_city")} />
             </div>
           </div>
         </section>
 
         {/* ------------------------------------------------------------------ */}
-        {/* Section 2 — Pet Info (optional)                                     */}
+        {/* Section 2 — About Your Pet                                          */}
         {/* ------------------------------------------------------------------ */}
         <section className="space-y-6 rounded-3xl bg-white/90 p-6 shadow-soft ring-1 ring-white/70 md:p-8">
           <div className="space-y-1">
-            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-barkley-sage">
-              Section 2 — Optional
-            </p>
+            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-barkley-sage">Section 2</p>
             <h2 className="font-display text-2xl text-barkley-cocoa">About Your Pet</h2>
-            <p className="text-xs text-muted-foreground">
-              All fields in this section are optional. Fill in as much or as little as you like.
-            </p>
           </div>
 
           <div className="grid gap-5 sm:grid-cols-2">
-            {/* pet name */}
             <div className="space-y-2">
-              <Label htmlFor="pet_name">Pet name</Label>
+              <Label htmlFor="pet_name">Pet name *</Label>
               <Input id="pet_name" {...form.register("pet_name")} />
+              {errors.pet_name && (
+                <p className="text-xs text-destructive">{errors.pet_name.message}</p>
+              )}
             </div>
 
-            {/* pet breed */}
             <div className="space-y-2">
-              <Label htmlFor="pet_breed">Breed</Label>
-              <Input id="pet_breed" {...form.register("pet_breed")} />
+              <Label htmlFor="pet_breed">Breed *</Label>
+              <select id="pet_breed" className={fieldCls} {...form.register("pet_breed")}>
+                <option value="">Select breed…</option>
+                {BREEDS.map((b) => (
+                  <option key={b} value={b}>{b}</option>
+                ))}
+              </select>
+              {errors.pet_breed && (
+                <p className="text-xs text-destructive">{errors.pet_breed.message}</p>
+              )}
             </div>
 
-            {/* birthday */}
             <div className="space-y-2">
-              <Label htmlFor="pet_birthday">Birthday</Label>
+              <Label htmlFor="pet_birthday">Pet birthday</Label>
               <Input id="pet_birthday" type="date" {...form.register("pet_birthday")} />
-              <p className="text-[0.65rem] text-muted-foreground">
-                Filling this in auto-calculates age below.
-              </p>
             </div>
 
-            {/* age — auto-filled, manually editable */}
             <div className="space-y-2">
-              <Label htmlFor="pet_age_years">Age (years)</Label>
+              <Label htmlFor="pet_age_years">Age in years (if birthday unknown)</Label>
               <Input
                 id="pet_age_years"
                 type="number"
                 min={0}
+                max={25}
+                step={0.1}
+                placeholder="e.g. 3"
                 {...form.register("pet_age_years")}
               />
+              {errors.pet_age_years && (
+                <p className="text-xs text-destructive">{errors.pet_age_years.message}</p>
+              )}
             </div>
 
-            {/* weight */}
             <div className="space-y-2">
-              <Label htmlFor="pet_weight_lbs">Weight (lbs)</Label>
+              <Label htmlFor="pet_weight_lbs">Weight (lbs) *</Label>
               <Input
                 id="pet_weight_lbs"
                 type="number"
-                min={0}
-                step="0.1"
+                min={1}
+                max={200}
+                step={0.1}
+                placeholder="e.g. 45"
                 {...form.register("pet_weight_lbs")}
               />
+              {errors.pet_weight_lbs && (
+                <p className="text-xs text-destructive">{errors.pet_weight_lbs.message}</p>
+              )}
             </div>
 
-            {/* sex */}
             <div className="space-y-2">
               <Label htmlFor="pet_sex">Sex</Label>
               <select id="pet_sex" className={fieldCls} {...form.register("pet_sex")}>
                 <option value="">Select…</option>
                 <option value="Male">Male</option>
                 <option value="Female">Female</option>
+                <option value="Unknown">Unknown</option>
               </select>
             </div>
 
-            {/* activity level */}
             <div className="space-y-2 sm:col-span-2">
-              <Label htmlFor="activity_level">Activity level</Label>
-              <select
-                id="activity_level"
-                className={fieldCls}
-                {...form.register("activity_level")}
-              >
-                <option value="">Select…</option>
-                <option value="Low">Low</option>
-                <option value="Moderate">Moderate</option>
-                <option value="High">High</option>
-                <option value="Very High">Very High</option>
-              </select>
-            </div>
-
-            {/* allergies */}
-            <div className="space-y-2 sm:col-span-2">
-              <Label htmlFor="allergies">Allergies</Label>
-              <textarea
-                id="allergies"
-                rows={3}
-                className={`${fieldCls} resize-none`}
-                placeholder="e.g. chicken, grain, dairy…"
-                {...form.register("allergies")}
-              />
-            </div>
-
-            {/* health conditions */}
-            <div className="space-y-2 sm:col-span-2">
-              <Label htmlFor="health_conditions">Health conditions</Label>
+              <Label htmlFor="health_conditions">Health conditions / allergies</Label>
               <textarea
                 id="health_conditions"
                 rows={3}
                 className={`${fieldCls} resize-none`}
-                placeholder="e.g. hip dysplasia, diabetes…"
+                placeholder="Optional"
                 {...form.register("health_conditions")}
               />
             </div>
 
-            {/* vet notes */}
             <div className="space-y-2 sm:col-span-2">
-              <Label htmlFor="vet_notes">Vet notes</Label>
-              <textarea
-                id="vet_notes"
-                rows={3}
-                className={`${fieldCls} resize-none`}
-                placeholder="Any notes from your vet…"
-                {...form.register("vet_notes")}
-              />
+              <Label htmlFor="signup_source">How did you hear about us?</Label>
+              <select id="signup_source" className={fieldCls} {...form.register("signup_source")}>
+                <option value="">Select…</option>
+                <option value="Website">Website</option>
+                <option value="Instagram">Instagram</option>
+                <option value="Referral">Referral</option>
+                <option value="In-person">In-person</option>
+                <option value="Other">Other</option>
+              </select>
             </div>
           </div>
         </section>

@@ -44,10 +44,21 @@ export const useBarkleyStore = create<BarkleyStore>()(
       recentSearches: [],
       promoCode: null,
       isLoggedIn: false,
-      setLoggedIn: (value) => set({ isLoggedIn: value }),
+      setLoggedIn: (value) => {
+        set({ isLoggedIn: value });
+        // Mirror into a cookie so middleware can read auth state server-side.
+        // TODO: Remove once NextAuth is wired — the JWT token will replace this.
+        if (typeof document !== "undefined") {
+          if (value) {
+            document.cookie = "barkley-auth=1; path=/; max-age=604800; SameSite=Lax";
+          } else {
+            document.cookie = "barkley-auth=; path=/; max-age=0; SameSite=Lax";
+          }
+        }
+      },
       profileData: null,
       setProfileData: (data) => set({ profileData: data }),
-      clearUserData: () =>
+      clearUserData: () => {
         set({
           isLoggedIn: false,
           profileData: null,
@@ -55,7 +66,12 @@ export const useBarkleyStore = create<BarkleyStore>()(
           wishlist: { ids: [] },
           recentSearches: [],
           promoCode: null,
-        }),
+        });
+        // Clear auth cookie so middleware stops passing requests through
+        if (typeof document !== "undefined") {
+          document.cookie = "barkley-auth=; path=/; max-age=0; SameSite=Lax";
+        }
+      },
       addToCart: (line) =>
         set((state) => {
           const existingIndex = state.cart.lines.findIndex(

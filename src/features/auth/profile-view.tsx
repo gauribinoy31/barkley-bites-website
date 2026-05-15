@@ -14,6 +14,7 @@ import {
   type ProfileFormValues,
   calcAgeFromBirthday,
   emptyProfileDefaults,
+  BREEDS,
 } from "@/features/auth/profile-schema";
 
 const fieldCls =
@@ -40,7 +41,7 @@ export function ProfileView() {
     defaultValues: emptyProfileDefaults,
   });
 
-  const { watch, setValue } = form;
+  const { watch, setValue, formState: { errors } } = form;
   const birthday = watch("pet_birthday");
 
   // Pre-fill from stored profile data once after mount
@@ -79,9 +80,7 @@ export function ProfileView() {
     <div className="mx-auto max-w-3xl space-y-10 px-4 py-12 md:px-6 lg:px-8">
       {/* Page header */}
       <div className="space-y-2">
-        <p className="text-xs font-semibold uppercase tracking-[0.3em] text-barkley-sage">
-          Account
-        </p>
+        <p className="text-xs font-semibold uppercase tracking-[0.3em] text-barkley-sage">Account</p>
         <h1 className="font-display text-4xl text-barkley-cocoa">My Profile</h1>
         <p className="text-sm text-muted-foreground">
           Keep your details up to date. Changes save to your account.
@@ -90,13 +89,11 @@ export function ProfileView() {
 
       <form onSubmit={onSubmit} noValidate className="space-y-10">
         {/* ------------------------------------------------------------------ */}
-        {/* Section 1 — Owner Info                                              */}
+        {/* Section 1 — About You                                               */}
         {/* ------------------------------------------------------------------ */}
         <section className="space-y-6 rounded-3xl bg-white/90 p-6 shadow-soft ring-1 ring-white/70 md:p-8">
           <div className="space-y-1">
-            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-barkley-sage">
-              Section 1
-            </p>
+            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-barkley-sage">Section 1</p>
             <h2 className="font-display text-2xl text-barkley-cocoa">About You</h2>
           </div>
 
@@ -104,113 +101,110 @@ export function ProfileView() {
             <div className="space-y-2">
               <Label htmlFor="p-owner_first_name">First name *</Label>
               <Input id="p-owner_first_name" {...form.register("owner_first_name")} />
-              {form.formState.errors.owner_first_name && (
-                <p className="text-xs text-destructive">
-                  {form.formState.errors.owner_first_name.message}
-                </p>
+              {errors.owner_first_name && (
+                <p className="text-xs text-destructive">{errors.owner_first_name.message}</p>
               )}
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="p-owner_last_name">Last name *</Label>
               <Input id="p-owner_last_name" {...form.register("owner_last_name")} />
-              {form.formState.errors.owner_last_name && (
-                <p className="text-xs text-destructive">
-                  {form.formState.errors.owner_last_name.message}
-                </p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="p-owner_phone">Phone *</Label>
-              <Input id="p-owner_phone" type="tel" {...form.register("owner_phone")} />
-              {form.formState.errors.owner_phone && (
-                <p className="text-xs text-destructive">
-                  {form.formState.errors.owner_phone.message}
-                </p>
+              {errors.owner_last_name && (
+                <p className="text-xs text-destructive">{errors.owner_last_name.message}</p>
               )}
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="p-owner_email">Email *</Label>
               <Input id="p-owner_email" type="email" {...form.register("owner_email")} />
-              {form.formState.errors.owner_email && (
-                <p className="text-xs text-destructive">
-                  {form.formState.errors.owner_email.message}
-                </p>
+              {errors.owner_email && (
+                <p className="text-xs text-destructive">{errors.owner_email.message}</p>
               )}
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="p-owner_city">City</Label>
-              <Input id="p-owner_city" {...form.register("owner_city")} />
+              <Label htmlFor="p-owner_phone">Phone</Label>
+              <Input
+                id="p-owner_phone"
+                type="tel"
+                placeholder="(555) 000-0000"
+                {...form.register("owner_phone")}
+              />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="p-signup_source">How did you hear about us?</Label>
-              <select id="p-signup_source" className={fieldCls} {...form.register("signup_source")}>
-                <option value="">Select…</option>
-                <option value="Instagram">Instagram</option>
-                <option value="Facebook">Facebook</option>
-                <option value="TikTok">TikTok</option>
-                <option value="Google Search">Google Search</option>
-                <option value="Friend/Referral">Friend / Referral</option>
-                <option value="Other">Other</option>
-              </select>
+            <div className="space-y-2 sm:col-span-2">
+              <Label htmlFor="p-owner_city">City</Label>
+              <Input id="p-owner_city" placeholder="Dallas" {...form.register("owner_city")} />
             </div>
           </div>
         </section>
 
         {/* ------------------------------------------------------------------ */}
-        {/* Section 2 — Pet Info (optional)                                     */}
+        {/* Section 2 — About Your Pet                                          */}
         {/* ------------------------------------------------------------------ */}
         <section className="space-y-6 rounded-3xl bg-white/90 p-6 shadow-soft ring-1 ring-white/70 md:p-8">
           <div className="space-y-1">
-            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-barkley-sage">
-              Section 2 — Optional
-            </p>
+            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-barkley-sage">Section 2</p>
             <h2 className="font-display text-2xl text-barkley-cocoa">About Your Pet</h2>
-            <p className="text-xs text-muted-foreground">All fields optional.</p>
           </div>
 
           <div className="grid gap-5 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="p-pet_name">Pet name</Label>
+              <Label htmlFor="p-pet_name">Pet name *</Label>
               <Input id="p-pet_name" {...form.register("pet_name")} />
+              {errors.pet_name && (
+                <p className="text-xs text-destructive">{errors.pet_name.message}</p>
+              )}
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="p-pet_breed">Breed</Label>
-              <Input id="p-pet_breed" {...form.register("pet_breed")} />
+              <Label htmlFor="p-pet_breed">Breed *</Label>
+              <select id="p-pet_breed" className={fieldCls} {...form.register("pet_breed")}>
+                <option value="">Select breed…</option>
+                {BREEDS.map((b) => (
+                  <option key={b} value={b}>{b}</option>
+                ))}
+              </select>
+              {errors.pet_breed && (
+                <p className="text-xs text-destructive">{errors.pet_breed.message}</p>
+              )}
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="p-pet_birthday">Birthday</Label>
+              <Label htmlFor="p-pet_birthday">Pet birthday</Label>
               <Input id="p-pet_birthday" type="date" {...form.register("pet_birthday")} />
-              <p className="text-[0.65rem] text-muted-foreground">
-                Filling this in auto-calculates age below.
-              </p>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="p-pet_age_years">Age (years)</Label>
+              <Label htmlFor="p-pet_age_years">Age in years (if birthday unknown)</Label>
               <Input
                 id="p-pet_age_years"
                 type="number"
                 min={0}
+                max={25}
+                step={0.1}
+                placeholder="e.g. 3"
                 {...form.register("pet_age_years")}
               />
+              {errors.pet_age_years && (
+                <p className="text-xs text-destructive">{errors.pet_age_years.message}</p>
+              )}
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="p-pet_weight_lbs">Weight (lbs)</Label>
+              <Label htmlFor="p-pet_weight_lbs">Weight (lbs) *</Label>
               <Input
                 id="p-pet_weight_lbs"
                 type="number"
-                min={0}
-                step="0.1"
+                min={1}
+                max={200}
+                step={0.1}
+                placeholder="e.g. 45"
                 {...form.register("pet_weight_lbs")}
               />
+              {errors.pet_weight_lbs && (
+                <p className="text-xs text-destructive">{errors.pet_weight_lbs.message}</p>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -219,55 +213,31 @@ export function ProfileView() {
                 <option value="">Select…</option>
                 <option value="Male">Male</option>
                 <option value="Female">Female</option>
+                <option value="Unknown">Unknown</option>
               </select>
             </div>
 
             <div className="space-y-2 sm:col-span-2">
-              <Label htmlFor="p-activity_level">Activity level</Label>
-              <select
-                id="p-activity_level"
-                className={fieldCls}
-                {...form.register("activity_level")}
-              >
-                <option value="">Select…</option>
-                <option value="Low">Low</option>
-                <option value="Moderate">Moderate</option>
-                <option value="High">High</option>
-                <option value="Very High">Very High</option>
-              </select>
-            </div>
-
-            <div className="space-y-2 sm:col-span-2">
-              <Label htmlFor="p-allergies">Allergies</Label>
-              <textarea
-                id="p-allergies"
-                rows={3}
-                className={`${fieldCls} resize-none`}
-                placeholder="e.g. chicken, grain, dairy…"
-                {...form.register("allergies")}
-              />
-            </div>
-
-            <div className="space-y-2 sm:col-span-2">
-              <Label htmlFor="p-health_conditions">Health conditions</Label>
+              <Label htmlFor="p-health_conditions">Health conditions / allergies</Label>
               <textarea
                 id="p-health_conditions"
                 rows={3}
                 className={`${fieldCls} resize-none`}
-                placeholder="e.g. hip dysplasia, diabetes…"
+                placeholder="Optional"
                 {...form.register("health_conditions")}
               />
             </div>
 
             <div className="space-y-2 sm:col-span-2">
-              <Label htmlFor="p-vet_notes">Vet notes</Label>
-              <textarea
-                id="p-vet_notes"
-                rows={3}
-                className={`${fieldCls} resize-none`}
-                placeholder="Any notes from your vet…"
-                {...form.register("vet_notes")}
-              />
+              <Label htmlFor="p-signup_source">How did you hear about us?</Label>
+              <select id="p-signup_source" className={fieldCls} {...form.register("signup_source")}>
+                <option value="">Select…</option>
+                <option value="Website">Website</option>
+                <option value="Instagram">Instagram</option>
+                <option value="Referral">Referral</option>
+                <option value="In-person">In-person</option>
+                <option value="Other">Other</option>
+              </select>
             </div>
           </div>
         </section>

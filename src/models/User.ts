@@ -15,6 +15,29 @@ const addressSchema = new Schema(
   { _id: false },
 );
 
+// Embedded profile document — field names match the onboarding form payload exactly
+const profileSchema = new Schema(
+  {
+    owner_first_name: { type: String },
+    owner_last_name: { type: String },
+    owner_email: { type: String },
+    owner_phone: { type: String },
+    owner_city: { type: String },
+    pet_name: { type: String },
+    pet_breed: { type: String },
+    pet_birthday: { type: String },
+    pet_age_years: { type: Number },
+    pet_weight_lbs: { type: Number },
+    pet_sex: { type: String, enum: ["Male", "Female", "Unknown", ""] },
+    health_conditions: { type: String },
+    signup_source: {
+      type: String,
+      enum: ["Website", "Instagram", "Referral", "In-person", "Other", ""],
+    },
+  },
+  { _id: false },
+);
+
 const userSchema = new Schema(
   {
     email: { type: String, required: true, unique: true, lowercase: true, trim: true },
@@ -28,6 +51,7 @@ const userSchema = new Schema(
     passwordResetToken: { type: String },
     passwordResetExpires: { type: Date },
     defaultAddress: addressSchema,
+    profile: profileSchema,
   },
   { timestamps: true },
 );
