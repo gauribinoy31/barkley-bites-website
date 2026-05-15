@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -9,26 +9,23 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useBarkleyStore } from "@/store/use-store";
-import { profileSchema, type ProfileFormValues } from "@/features/auth/register-view";
+import {
+  profileSchema,
+  type ProfileFormValues,
+  calcAgeFromBirthday,
+  emptyProfileDefaults,
+} from "@/features/auth/profile-schema";
 
 const fieldCls =
   "flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50";
-
-function calcAgeFromBirthday(dateStr: string): number {
-  const birth = new Date(dateStr);
-  if (isNaN(birth.getTime())) return 0;
-  const today = new Date();
-  let age = today.getFullYear() - birth.getFullYear();
-  const m = today.getMonth() - birth.getMonth();
-  if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
-  return Math.max(0, age);
-}
 
 export function ProfileView() {
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
   const [saved, setSaved] = useState(false);
   const isLoggedIn = useBarkleyStore((s) => s.isLoggedIn);
+  const profileData = useBarkleyStore((s) => s.profileData);
+  const setProfileData = useBarkleyStore((s) => s.setProfileData);
 
   useEffect(() => setMounted(true), []);
 
@@ -39,37 +36,31 @@ export function ProfileView() {
 
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileSchema),
-    // TODO: Pre-fill from MongoDB once connected
-    defaultValues: {
-      owner_first_name: "",
-      owner_last_name: "",
-      owner_phone: "",
-      owner_email: "",
-      owner_city: "",
-      signup_source: "",
-      pet_name: "",
-      pet_breed: "",
-      pet_birthday: "",
-      pet_age_years: "",
-      pet_weight_lbs: "",
-      pet_sex: "",
-      allergies: "",
-      health_conditions: "",
-      activity_level: "",
-      vet_notes: "",
-    },
+    // TODO: Pre-fill from MongoDB once connected — currently uses localStorage via Zustand
+    defaultValues: emptyProfileDefaults,
   });
 
   const { watch, setValue } = form;
   const birthday = watch("pet_birthday");
 
+  // Pre-fill from stored profile data once after mount
+  const hasPrefilled = useRef(false);
+  useEffect(() => {
+    if (mounted && profileData && !hasPrefilled.current) {
+      hasPrefilled.current = true;
+      form.reset(profileData);
+    }
+  }, [mounted, profileData, form]);
+
+  // Auto-calculate age when birthday changes
   useEffect(() => {
     if (!birthday) return;
     setValue("pet_age_years", calcAgeFromBirthday(birthday), { shouldValidate: false });
   }, [birthday, setValue]);
 
-  const onSubmit = form.handleSubmit(() => {
+  const onSubmit = form.handleSubmit((data) => {
     // TODO: POST to /api/profile/save once MongoDB is connected
+    setProfileData(data);
     setSaved(true);
     setTimeout(() => setSaved(false), 4000);
   });
@@ -106,7 +97,7 @@ export function ProfileView() {
             <p className="text-xs font-semibold uppercase tracking-[0.3em] text-barkley-sage">
               Section 1
             </p>
-            <h2 className="font-display text-2xl text-barkley-cocoa">Owner info</h2>
+            <h2 className="font-display text-2xl text-barkley-cocoa">About You</h2>
           </div>
 
           <div className="grid gap-5 sm:grid-cols-2">
@@ -178,7 +169,7 @@ export function ProfileView() {
             <p className="text-xs font-semibold uppercase tracking-[0.3em] text-barkley-sage">
               Section 2 — Optional
             </p>
-            <h2 className="font-display text-2xl text-barkley-cocoa">Pet info</h2>
+            <h2 className="font-display text-2xl text-barkley-cocoa">About Your Pet</h2>
             <p className="text-xs text-muted-foreground">All fields optional.</p>
           </div>
 

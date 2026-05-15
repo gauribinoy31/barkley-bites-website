@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
 import { type Session } from "next-auth";
-import { Menu, ShoppingBag, UserRound, X } from "lucide-react";
+import { LogOut, Menu, ShoppingBag, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -30,15 +30,16 @@ export function NavbarClient({ session }: NavbarClientProps) {
   const [open, setOpen] = useState(false);
   const cartCount = useBarkleyStore(selectCartItemCount);
   const isLoggedIn = useBarkleyStore((s) => s.isLoggedIn);
-  const setLoggedIn = useBarkleyStore((s) => s.setLoggedIn);
+  const clearUserData = useBarkleyStore((s) => s.clearUserData);
 
   useEffect(() => {
     setOpen(false);
   }, [pathname]);
 
   const handleZustandSignOut = () => {
+    // Clears profileData, cart, wishlist and isLoggedIn so the next user starts fresh.
     // TODO: Also call NextAuth signOut() once backend is wired
-    setLoggedIn(false);
+    clearUserData();
     router.push("/");
   };
 
@@ -95,29 +96,14 @@ export function NavbarClient({ session }: NavbarClientProps) {
           </Link>
 
           {session?.user || isLoggedIn ? (
-            <div className="relative hidden items-center gap-2 rounded-full border border-white/70 bg-white/70 px-2 py-1 pl-1 pr-2 text-xs shadow-soft md:flex">
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-barkley-sand text-barkley-cocoa">
-                <UserRound className="h-4 w-4" />
-              </div>
-              <div className="flex flex-col">
-                <span className="max-w-[120px] truncate text-[0.7rem] font-semibold text-barkley-cocoa">
-                  {session?.user?.name ?? "Member"}
-                </span>
-                <button
-                  type="button"
-                  onClick={session?.user ? () => signOut({ callbackUrl: "/" }) : handleZustandSignOut}
-                  className="text-left text-[0.65rem] font-medium uppercase tracking-[0.18em] text-muted-foreground hover:text-barkley-forest"
-                >
-                  Sign out
-                </button>
-              </div>
-              <Link
-                href="/profile"
-                className="ml-1 rounded-full bg-barkley-forest px-3 py-1 text-[0.65rem] font-semibold uppercase tracking-[0.16em] text-barkley-cream hover:bg-barkley-forest/90"
-              >
-                Profile
-              </Link>
-            </div>
+            <button
+              type="button"
+              onClick={session?.user ? () => signOut({ callbackUrl: "/" }) : handleZustandSignOut}
+              className="hidden h-10 w-10 items-center justify-center rounded-full border border-white/70 bg-white/70 text-barkley-cocoa shadow-soft transition hover:-translate-y-0.5 hover:shadow-premium md:inline-flex"
+              aria-label="Sign out"
+            >
+              <LogOut className="h-4 w-4" />
+            </button>
           ) : (
             <Link href="/" className="hidden md:inline-flex">
               <Button variant="outline" size="sm" className="rounded-full px-5 text-[0.65rem] uppercase tracking-[0.18em]">

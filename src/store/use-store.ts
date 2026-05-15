@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { CartLine } from "@/types";
+import type { ProfileFormValues } from "@/features/auth/profile-schema";
 
 type WishlistState = {
   ids: string[];
@@ -28,6 +29,11 @@ type BarkleyStore = {
   // UI-only auth flag — replaced by real NextAuth session once backend is wired
   isLoggedIn: boolean;
   setLoggedIn: (value: boolean) => void;
+  // UI-only profile data — replaced by MongoDB fetch once backend is wired
+  profileData: ProfileFormValues | null;
+  setProfileData: (data: ProfileFormValues) => void;
+  // Clears all user-specific state on sign-out to prevent data bleeding between accounts
+  clearUserData: () => void;
 };
 
 export const useBarkleyStore = create<BarkleyStore>()(
@@ -39,6 +45,17 @@ export const useBarkleyStore = create<BarkleyStore>()(
       promoCode: null,
       isLoggedIn: false,
       setLoggedIn: (value) => set({ isLoggedIn: value }),
+      profileData: null,
+      setProfileData: (data) => set({ profileData: data }),
+      clearUserData: () =>
+        set({
+          isLoggedIn: false,
+          profileData: null,
+          cart: { lines: [] },
+          wishlist: { ids: [] },
+          recentSearches: [],
+          promoCode: null,
+        }),
       addToCart: (line) =>
         set((state) => {
           const existingIndex = state.cart.lines.findIndex(
@@ -126,6 +143,7 @@ export const useBarkleyStore = create<BarkleyStore>()(
         recentSearches: state.recentSearches,
         promoCode: state.promoCode,
         isLoggedIn: state.isLoggedIn,
+        profileData: state.profileData,
       }),
     },
   ),

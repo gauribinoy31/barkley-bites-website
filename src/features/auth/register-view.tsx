@@ -1,13 +1,22 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useBarkleyStore } from "@/store/use-store";
+import {
+  profileSchema,
+  type ProfileFormValues,
+  calcAgeFromBirthday,
+  emptyProfileDefaults,
+} from "@/features/auth/profile-schema";
+
+// Re-export schema + type so profile-view.tsx can import from one place
+export { profileSchema, type ProfileFormValues } from "@/features/auth/profile-schema";
 
 // ---------------------------------------------------------------------------
 // Shared field classes — mirrors the existing Input component styling
@@ -16,74 +25,30 @@ const fieldCls =
   "flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50";
 
 // ---------------------------------------------------------------------------
-// Zod schema
-// ---------------------------------------------------------------------------
-export const profileSchema = z.object({
-  // Section 1 — Owner Info (required)
-  owner_first_name: z.string().min(1, "First name is required"),
-  owner_last_name: z.string().min(1, "Last name is required"),
-  owner_phone: z.string().min(1, "Phone is required"),
-  owner_email: z.string().email("Enter a valid email"),
-  owner_city: z.string().optional(),
-  signup_source: z
-    .enum(["", "Instagram", "Facebook", "TikTok", "Google Search", "Friend/Referral", "Other"])
-    .optional(),
-
-  // Section 2 — Pet Info (all optional)
-  pet_name: z.string().optional(),
-  pet_breed: z.string().optional(),
-  pet_birthday: z.string().optional(),
-  pet_age_years: z.coerce.number().min(0).optional().or(z.literal("")),
-  pet_weight_lbs: z.coerce.number().min(0).optional().or(z.literal("")),
-  pet_sex: z.enum(["", "Male", "Female"]).optional(),
-  allergies: z.string().optional(),
-  health_conditions: z.string().optional(),
-  activity_level: z.enum(["", "Low", "Moderate", "High", "Very High"]).optional(),
-  vet_notes: z.string().optional(),
-});
-
-export type ProfileFormValues = z.infer<typeof profileSchema>;
-
-function calcAgeFromBirthday(dateStr: string): number {
-  const birth = new Date(dateStr);
-  if (isNaN(birth.getTime())) return 0;
-  const today = new Date();
-  let age = today.getFullYear() - birth.getFullYear();
-  const m = today.getMonth() - birth.getMonth();
-  if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
-  return Math.max(0, age);
-}
-
-// ---------------------------------------------------------------------------
 // Register View
 // ---------------------------------------------------------------------------
 export function RegisterView() {
   const router = useRouter();
+  const setLoggedIn = useBarkleyStore((s) => s.setLoggedIn);
+  const profileData = useBarkleyStore((s) => s.profileData);
+  const setProfileData = useBarkleyStore((s) => s.setProfileData);
 
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileSchema),
-    defaultValues: {
-      owner_first_name: "",
-      owner_last_name: "",
-      owner_phone: "",
-      owner_email: "",
-      owner_city: "",
-      signup_source: "",
-      pet_name: "",
-      pet_breed: "",
-      pet_birthday: "",
-      pet_age_years: "",
-      pet_weight_lbs: "",
-      pet_sex: "",
-      allergies: "",
-      health_conditions: "",
-      activity_level: "",
-      vet_notes: "",
-    },
+    defaultValues: emptyProfileDefaults,
   });
 
   const { watch, setValue } = form;
   const birthday = watch("pet_birthday");
+
+  // Pre-fill with previously saved data (e.g. user revisiting /register)
+  const hasPrefilled = useRef(false);
+  useEffect(() => {
+    if (profileData && !hasPrefilled.current) {
+      hasPrefilled.current = true;
+      form.reset(profileData);
+    }
+  }, [profileData, form]);
 
   // Auto-calculate age when birthday changes
   useEffect(() => {
@@ -91,12 +56,15 @@ export function RegisterView() {
     setValue("pet_age_years", calcAgeFromBirthday(birthday), { shouldValidate: false });
   }, [birthday, setValue]);
 
-  const onSubmit = form.handleSubmit(() => {
+  const onSubmit = form.handleSubmit((data) => {
     // TODO: POST to /api/profile/save once MongoDB is connected
+    setProfileData(data);
+    setLoggedIn(true);
     router.push("/");
   });
 
   const handleSkip = () => {
+    setLoggedIn(true);
     router.push("/");
   };
 
@@ -132,7 +100,7 @@ export function RegisterView() {
             <p className="text-xs font-semibold uppercase tracking-[0.3em] text-barkley-sage">
               Section 1
             </p>
-            <h2 className="font-display text-2xl text-barkley-cocoa">Owner info</h2>
+            <h2 className="font-display text-2xl text-barkley-cocoa">About You</h2>
           </div>
 
           <div className="grid gap-5 sm:grid-cols-2">
@@ -219,7 +187,7 @@ export function RegisterView() {
             <p className="text-xs font-semibold uppercase tracking-[0.3em] text-barkley-sage">
               Section 2 — Optional
             </p>
-            <h2 className="font-display text-2xl text-barkley-cocoa">Pet info</h2>
+            <h2 className="font-display text-2xl text-barkley-cocoa">About Your Pet</h2>
             <p className="text-xs text-muted-foreground">
               All fields in this section are optional. Fill in as much or as little as you like.
             </p>

@@ -49,8 +49,9 @@ export function SignInView() {
   });
 
   const handleSignUp = signUpForm.handleSubmit(() => {
+    // Navigate first — setLoggedIn(true) happens in RegisterView on submit/skip
+    // to avoid AuthGate briefly flashing <HomePage /> before navigation completes.
     // TODO: Replace with NextAuth signIn() once configured
-    setLoggedIn(true);
     router.push("/register");
   });
 
